@@ -1,0 +1,95 @@
+/* WatermeterMap.css */
+
+.map-container {
+    height: 100%;
+    width: 100%;
+  }
+  
+  .marker {
+    animation: hover 1s ease-in infinite;
+    background-color: #005596;
+    border-radius: 60px;
+    height: 60px;
+    margin-left: -30px;
+    top: 10%;
+    width: 60px;
+    z-index: 1;
+  }
+  
+  .marker, .marker:after {
+    left: 50%;
+    position: absolute;
+  }
+  
+  .marker:after {
+    background-color: #fff;
+    border-radius: 15px;
+    content: "";
+    height: 15px;
+    margin-left: -7.5px;
+    margin-top: -7.5px;
+    top: 50%;
+    width: 15px;
+    z-index: 2;
+  }
+  
+  .marker:before {
+    border-left: 24px solid transparent;
+    border-right: 24px solid transparent;
+    border-top: 40px solid #005596;
+    content: "";
+    left: 50%;
+    margin-left: -24px;
+    position: absolute;
+    top: 80%;
+    z-index: 0;
+  }
+  
+  .pulse {
+    display: block;
+    height: 17.1428571429px;
+    position: relative;
+    top: 30%;
+    transform: translate(-50%, 400%);
+    width: 60px;
+  }
+  
+  .pulse, .pulse:after, .pulse:before {
+    background: skyblue;
+    border-radius: 50%;
+    left: 50%;
+  }
+  
+  .pulse:after, .pulse:before {
+    animation: ripple 1s ease-in infinite;
+    content: "";
+    height: 100%;
+    opacity: .5;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    width: 100%;
+  }
+  
+  @keyframes ripple {
+    0% {
+      opacity: .5;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  
+    to {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(2);
+    }
+  }
+  
+  @keyframes hover {
+    0% {
+      margin-top: 0;
+    }
+  
+    50% {
+      margin-top: 10px;
+    }
+  }
+  

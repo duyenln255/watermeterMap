@@ -1,0 +1,108 @@
+/* Sidebar.css */
+
+.sidebar {
+  @apply bg-sky-100 text-gray-900 p-4 w-full h-screen flex flex-col;
+}
+
+.logo {
+  @apply flex items-center mb-4;
+}
+
+.logo img {
+  @apply h-12 w-12 mr-2 fill-current text-[#38bdf8];
+}
+
+.logo h1 {
+  @apply text-sky-800 font-bold font-sans text-lg;
+}
+
+.select-container {
+  @apply mb-4;
+}
+
+.select-container label {
+  @apply block mb-1;
+}
+
+.select-container .p-dropdown {
+  background: white;
+}
+
+.select-container .p-dropdown-label {
+  color: #1f2937 !important; /* Ensure text color for selected value and placeholder */
+}
+
+.multiselect-container {
+  @apply mb-4;
+}
+
+.multiselect-container .p-multiselect {
+  background: white;
+}
+
+.multiselect-container .p-multiselect-label {
+  color: #1f2937 !important; /* Ensure text color for selected value and placeholder */
+}
+
+.multiselect-container .p-multiselect-trigger {
+  background: initial;
+  color: initial;
+}
+
+.multiselect-container .p-multiselect-item {
+  padding: 0.5rem;
+}
+
+.multiselect-container .p-highlight {
+  background: bg-sky-400 !important;
+  color: white !important;
+}
+
+.info-header {
+  @apply text-black font-sans mb-2;
+}
+
+.scrollable-content {
+  @apply flex-grow overflow-auto;
+}
+
+.watermeter-table {
+  @apply w-full text-left border;
+}
+
+.watermeter-table th, .watermeter-table td {
+  @apply border-b border-white py-2 px-3;
+}
+
+.watermeter-table th {
+  @apply bg-sky-500 text-white;
+}
+
+.watermeter-table tr:nth-child(even) {
+  @apply bg-sky-200;
+}
+
+.watermeter-table tr:nth-child(odd) {
+  @apply bg-sky-200;
+}
+
+.watermeter-table td {
+  @apply bg-sky-200;
+}
+
+/* Custom styles for MultiSelect checkboxes */
+.p-multiselect-item .p-checkbox-box {
+  border: 2px solid #38bdf8 !important;
+}
+
+.p-multiselect-item .p-checkbox-box .p-checkbox-icon {
+  background-color: #38bdf8 !important;
+}
+
+.p-checkbox-box:not(.p-highlight) {
+  border: 2px solid #38bdf8 !important;
+}
+
+.p-checkbox-box:not(.p-highlight) .p-checkbox-icon {
+  background-color: transparent !important;
+}

@@ -1,0 +1,5 @@
+/* App.css */
+
+.grid-container {
+  @apply grid grid-cols-1 md:grid-cols-[1fr_350px] h-screen;
+}

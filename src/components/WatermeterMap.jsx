@@ -1,152 +1,274 @@
-
-
 import React, { useEffect, useState } from 'react';
-import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api';
-import { loadGeoJson } from '../utils/geojsonLoader'; // Import hàm loadGeoJson từ utils
+import { GoogleMap, useJsApiLoader, MarkerF, InfoWindowF, Circle } from '@react-google-maps/api';
+import { loadGeoJson, getCenterOfDistrict, markers, filterWaterMeterDataByArea } from '../utils/mapUtils';
+import MyLocationIcon from '@mui/icons-material/MyLocation';
+import '../styles/WatermeterMap.css';
 
+
+// Cấu hình cho container của bản đồ
 const containerStyle = {
-  width: '100%', // Chiều rộng  bản đồ
-  height: '100vh', // Chiều cao bản đồ
+  width: '100%',
+  height: '100vh',
 };
 
+// Tọa độ trung tâm mặc định cho bản đồ (TP Hồ Chí Minh)
 const center = {
-  lat: 10.762622, // Vĩ độ trung tâm 
-  lng: 106.660172, // Kinh độ trung 
+  lat: 10.762622,
+  lng: 106.660172,
 };
-
-const markers = [
-
-  { lat: 10.9744159, lng: 106.4948968 },
-  { lat: 10.4147541, lng: 106.9714754 },
-  { lat: 10.8860463, lng: 106.6380764 },   
-  // { lat: 10.7816783, lng: 106.6580764 },
-  // { lat: 10.7828823, lng: 106.6980764 },
-  // { lat: 10.7941361, lng: 106.6942543 },
-  // { lat: 10.7939072, lng: 106.6622172 },
-  // { lat: 10.7936121, lng: 106.6946965 },
-  { lat: 10.6901149, lng: 106.5826774 },
-  // { lat: 10.7933411, lng: 106.7004888 },
-  { lat: 10.6959787, lng: 106.6916699 },
-  // { lat: 10.7692622, lng: 106.6672172 },
-  // { lat: 10.7702622, lng: 106.6682172 },
-  // { lat: 10.7912622, lng: 106.6692172 },
-  { lat: 10.7822622, lng: 106.6702172 },
-]; // Danh sách tọa độ các markers
 
 function WatermeterMap({ selectedArea, setSelectedArea }) {
+  // Sử dụng hook để tải Google Maps API, với khóa API từ file môi trường
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY, // Nạp API key từ .env, vì dùng vite nên phải là import.meta.env.
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
   });
 
-  const [map, setMap] = useState(null); // State lưu trữ đối tượng map
-  const [geoJsonData, setGeoJsonData] = useState(null); // State lưu trữ dữ liệu GeoJson
-  const [labels, setLabels] = useState([]); // State lưu trữ các nhãn
+  // Khai báo các state cần thiết
+  const [map, setMap] = useState(null); //  lưu trữ đối tượng bản đồ
+  const [geoJsonData, setGeoJsonData] = useState(null); //  lưu trữ dữ liệu GeoJSON
+  const [labels, setLabels] = useState([]);             // Biến lưu trữ các nhãn (labels) cho các khu vực
+  const [currentLocation, setCurrentLocation] = useState(null); // Vị trí hiện tại của người dùng
+  const [activeMarker, setActiveMarker] = useState(null);  // lưu trữ ID của marker đang được chọn
+  const [filteredMarkers, setFilteredMarkers] = useState(markers); // Các marker đã được lọc theo khu vực
 
+  // Sử dụng useEffect để tải dữ liệu GeoJSON khi component được mount
   useEffect(() => {
     const fetchGeoJson = async () => {
-      const data = await loadGeoJson('/hcm.geojson'); // Tải dữ liệu GeoJson từ file
-      setGeoJsonData(data); // Lưu dữ liệu GeoJson vào state
+      const data = await loadGeoJson('/hcm.geojson');
+      setGeoJsonData(data); // Lưu dữ liệu GeoJSON vào state
     };
     fetchGeoJson();
   }, []);
 
+  // Sử dụng useEffect để cập nhật bản đồ khi map hoặc geoJsonData thay đổi
   useEffect(() => {
     if (map && geoJsonData) {
-      map.data.addGeoJson(geoJsonData); // Thêm dữ liệu GeoJson vào bản đồ
+      map.data.addGeoJson(geoJsonData);
+      // Thiết lập kiểu dáng cho các khu vực trên bản đồ
       map.data.setStyle((feature) => {
-        const district = feature.getProperty('name'); // Lấy tên khu vực từ thuộc tính của feature
-        const isSelected = selectedArea === district; // Kiểm tra xem khu vực có được chọn không
-        const isHCMSelected = selectedArea === 'Hồ Chí Minh'; // Kiểm tra xem thành phố Hồ Chí Minh có được chọn không
-        const fillColor = isSelected ? '#FF5733' : isHCMSelected ? '#33A8FF' : '#a3e635'; // Đặt màu nền
-        const strokeColor = isSelected ? '#C70039' : isHCMSelected ? '#1E90FF' : '#581845'; // Đặt màu viền
+        const district = feature.getProperty('name'); // Lấy tên khu vực từ dữ liệu GeoJSON
+        const isSelected = selectedArea === district; // Kiểm tra xem khu vực có đang được chọn không
+        const fillColor = isSelected ? '#FF5733' : '#a3e635';  // Màu nền
+        const strokeColor = isSelected ? '#C70039' : '#581845'; // Màu viền
 
         return {
           fillColor,
-          fillOpacity: isSelected ? 0.4 : 0.3, // Đặt độ mờ nền
+          fillOpacity: isSelected ? 0.4 : 0.3, // Độ đậm của màu nền
           strokeColor,
-          strokeWeight: 1, // Đặt độ dày viền
+          strokeWeight: 1,  // Độ dày của viền
         };
       });
 
+      // click cho các khu vực trên bản đồ
       map.data.addListener('click', (event) => {
-        const district = event.feature.getProperty('name'); // Lấy tên khu vực từ sự kiện click
-        setSelectedArea(district); // Cập nhật khu vực được chọn
-        map.panTo(event.latLng); // Di chuyển bản đồ đến vị trí click
+        const district = event.feature.getProperty('name'); // Lấy tên khu vực được click
+        setSelectedArea(district);  // Cập nhật khu vực được chọn
+        map.panTo(event.latLng); // Di chuyển bản đồ đến vị trí vừa click
       });
 
-      // Lọc để chỉ giữ các vùng (polygon)
+      // Loại bỏ các feature không phải là Polygon hoặc MultiPolygon khỏi bản đồ
       map.data.forEach((feature) => {
         if (feature.getGeometry().getType() !== 'Polygon' && feature.getGeometry().getType() !== 'MultiPolygon') {
-          map.data.remove(feature); // Loại bỏ các feature không phải là Polygon hoặc MultiPolygon
+          map.data.remove(feature);
         }
       });
 
-      // Thêm nhãn cho từng vùng/quận huyện
+      // Tạo các nhãn cho từng khu vực trên bản đồ
       const newLabels = [];
       map.data.forEach((feature) => {
-        const districtName = feature.getProperty('name'); // Lấy tên khu vực từ feature
-        const bounds = new window.google.maps.LatLngBounds();
-        feature.getGeometry().forEachLatLng((latLng) => {
-          bounds.extend(latLng); // Mở rộng bounds với các tọa độ của feature
-        });
-        const center = bounds.getCenter(); // Lấy trung tâm của bounds
+        const districtName = feature.getProperty('name');//lấy tên khu vuc từ dữ liệu GeoJSON
+        const center = getCenterOfDistrict(districtName);// Lấy tọa độ trung tâm để đặt label
 
-        const label = new window.google.maps.Marker({
-          position: center,
-          map,
-          label: districtName, // Đặt nhãn là tên khu vực
-          icon: {
-            path: window.google.maps.SymbolPath.CIRCLE,
-            scale: 0, // Ẩn icon marker
-          },
-        });
-        newLabels.push(label); // Thêm nhãn vào danh sách nhãn
+        if (center) {
+          const labelText = districtName ? districtName.toString() : ''; // Đảm bảo label là chuỗi
+          const label = new window.google.maps.Marker({
+            position: center,
+            map,
+            label: {
+              text: labelText,
+              color: '#404e5e',
+              fontSize: '14px',
+              className: "label-text",
+            },
+            icon: {
+              path: window.google.maps.SymbolPath.CIRCLE,
+              scale: 0,
+            },
+          });
+        
+          newLabels.push(label);
+        }
+        
       });
-      setLabels(newLabels); // Cập nhật state nhãn
+      setLabels(newLabels);
 
-      // Xử lý sự kiện zoom để hiển thị/ẩn nhãn
+      // Thiết lập  thay đổi zoom, hiện/ẩn các label dựa trên mức zoom
       const handleZoomChanged = () => {
         const zoomLevel = map.getZoom();
-        newLabels.forEach(label => {
-          if (zoomLevel >= 12) {
-            label.setVisible(true); // Hiển thị nhãn nếu zoom đủ lớn
-          } else {
-            label.setVisible(false); // Ẩn nhãn nếu zoom nhỏ
-          }
+        newLabels.forEach((label) => {
+          label.setVisible(zoomLevel >= 12); // Hiện label nếu zoom >= 12
         });
       };
 
-      handleZoomChanged(); // Gọi lần đầu để thiết lập ban đầu
-
-      map.addListener('zoom_changed', handleZoomChanged); // Thêm listener cho sự kiện zoom
+      handleZoomChanged();
+      map.addListener('zoom_changed', handleZoomChanged);
     }
-  }, [map, geoJsonData, selectedArea, setSelectedArea]);
+  }, [map, geoJsonData, selectedArea, setSelectedArea]); // Thêm dữ liệu GeoJSON vào bản đồ
 
+  // Sử dụng useEffect để cập nhật các marker khi khu vực được chọn thay đổi
+  useEffect(() => {
+    if (selectedArea === 'Thành phố Hồ Chí Minh') {
+      setFilteredMarkers(markers); // Hiển thị tất cả các marker nếu chọn TP Hồ Chí Minh
+    } else {
+      const newFilteredMarkers = filterWaterMeterDataByArea(markers, selectedArea);
+      setFilteredMarkers(newFilteredMarkers);// Cập nhật danh sách marker được hiển thị
+    }
+
+    if (map && selectedArea) {
+      const newCenter = getCenterOfDistrict(selectedArea);
+      let zoomLevel;
+
+      if (selectedArea === 'Thành phố Hồ Chí Minh') {
+        zoomLevel = 10;
+      } else if (['Huyện Củ Chi', 'Huyện Bình Chánh', 'Huyện Hóc Môn', 'Huyện Cần Giờ', 'Thành phố Thủ Đức'].includes(selectedArea)) {
+        zoomLevel = 11.5;
+      } else if (['Quận 12', 'Quận Bình Thạnh', 'Quận Tân Bình', 'Huyện Nhà Bè', 'Quận Bình Tân', 'Quận 7', 'Quận 8', 'Quận Tân Phú'].includes(selectedArea)) {
+        zoomLevel = 12.4;
+      } else {
+        zoomLevel = 14;
+      }
+
+      map.panTo(newCenter);// Di chuyển bản đồ đến vị trí trung tâm của khu vực
+      map.setZoom(zoomLevel);
+    }
+  }, [selectedArea, map]);
+
+  // Hàm xử lý khi một marker được click
+  const handleMarkerClick = (markerId) => {
+    if (activeMarker === markerId) {
+      setActiveMarker(null);// Bỏ chọn marker nếu đã được chọn trước đó
+    } else {
+      setActiveMarker(markerId); // Chọn marker hiện tại
+    }
+  };
+
+  // Hàm xử lý khi người dùng click nút để lấy vị trí hiện tại
+  const handleCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const pos = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        setCurrentLocation(pos);
+        map.panTo(pos);
+        map.setZoom(13);
+      });
+    } else {
+      alert('Geolocation is not supported by this browser.');
+    }
+  };
+  // Hàm xử lý khi người dùng click nút để lấy vị trí hiện tại
   const onLoad = (map) => {
-    setMap(map); // Lưu đối tượng map vào state
+    setMap(map);
   };
 
   return isLoaded ? (
-    <GoogleMap
-      mapContainerStyle={containerStyle}
-      center={center} // Đặt trung tâm bản đồ
-      zoom={10} //  mức zoom ban đầu
-      onLoad={onLoad} // Gọi hàm onLoad khi bản đồ tải xong
-    >
-      {markers.map((position, index) => (
-        <MarkerF
-          key={index}
-          position={position}
-          options={{
-            icon: {
-              url: '../src/assets/water-meter-2.svg', // URL cho marker icon
-              scaledSize: new window.google.maps.Size(40, 40), // Điều chỉnh kích thước icon nếu cần
-            },
-          }}
-        />
-      ))}
-    </GoogleMap>
+    <div style={{ position: 'relative' }}>
+      <GoogleMap
+        mapContainerStyle={containerStyle}
+        center={center}
+        zoom={10}
+        onLoad={onLoad}
+        options={{
+          zoomControl: true,
+          zoomControlOptions: {
+            position: window.google.maps.ControlPosition.RIGHT_BOTTOM,
+          },
+        }}
+      >
+        
+        {/* Hiển thị các marker đã được lọc */}
+        {filteredMarkers.map((marker) => (
+          <MarkerF
+            key={marker.id}
+            position={{ lat: marker.lat, lng: marker.lng }}
+            onClick={() => handleMarkerClick(marker.id)}
+            options={{
+              icon: {
+                url: '../src/assets/water-meter-2.svg',
+                scaledSize: new window.google.maps.Size(30, 40),
+              },
+            }}
+          >
+            {activeMarker === marker.id ? (
+              <InfoWindowF onCloseClick={() => setActiveMarker(null)}>
+                <div className="infowindow-container">
+                  <h4>Thông tin Đồng hồ Nước</h4>
+                  <p>Chủ hộ: {marker.owner}</p>
+                  <p>Số seri: {marker.serial}</p>
+                  <p>Mã số đồng hồ: {marker.meterId}</p>
+                  <p>Vị trí: {marker.area}</p>
+                </div>
+              </InfoWindowF>
+            ) : null}
+          </MarkerF>
+        ))}
+        {/* Hiển thị vị trí hiện tại của người dùng */}
+        {currentLocation && (
+          <>
+            <MarkerF
+              position={currentLocation}
+              options={{
+                icon: {
+                  path: window.google.maps.SymbolPath.CIRCLE,
+                  scale: 8,
+                  fillColor: '#4285F4',
+                  fillOpacity: 1,
+                  strokeWeight: 2,
+                  strokeColor: 'white',
+                  strokeOpacity: 1,
+                },
+              }}
+            />
+            <Circle
+              center={currentLocation}
+              radius={50}
+              options={{
+                fillColor: '#4285F4',
+                fillOpacity: 0.2,
+                strokeColor: '#4285F4',
+                strokeOpacity: 0.5,
+                strokeWeight: 2,
+              }}
+            />
+          </>
+        )}
+      </GoogleMap>
+      <button
+        onClick={handleCurrentLocation}
+        style={{
+          position: 'absolute',
+          top: 'calc(100% - 200px)', // Adjusted from 160px to 200px
+          right: '10px',
+          zIndex: 10,
+          backgroundColor: '#fff',
+          border: '1px solid #4285F4',
+          // borderRadius: '5px',
+          width: '40px',
+          height: '40px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0px 0px 10px rgba(0, 0, 0, 0.1)',
+          cursor: 'pointer',
+        }}
+      >
+        <MyLocationIcon style={{ color: '#4285F4' }} />
+      </button>
+    </div>
   ) : null;
 }
 
-export default React.memo(WatermeterMap); // Sử dụng React.memo để tối ưu hiệu suất
+export default React.memo(WatermeterMap);
+

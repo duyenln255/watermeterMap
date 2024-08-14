@@ -1,7 +1,7 @@
 /* Sidebar.css */
 
 .sidebar {
-  @apply bg-sky-100 text-gray-900 p-4 w-full h-screen flex flex-col;
+  @apply bg-white text-gray-900 p-4 w-full h-screen flex flex-col;
 }
 
 .logo {
@@ -25,11 +25,11 @@
 }
 
 .select-container .p-dropdown {
-  background: white;
+  background: #0da6ea;
 }
 
 .select-container .p-dropdown-label {
-  color: #1f2937 !important; /* Ensure text color for selected value and placeholder */
+  color: #ffffff !important; /* Ensure text color for selected value and placeholder */
 }
 
 .multiselect-container {
@@ -62,12 +62,18 @@
   @apply text-black font-sans mb-2;
 }
 
+/* Updated style for the "Tổng số đồng hồ nước" section */
+.total-meters {
+  @apply bg-sky-500 text-white font-bold p-2 rounded mb-4;
+}
+
+/* Updated style for spacing between each water meter table */
 .scrollable-content {
   @apply flex-grow overflow-auto;
 }
 
 .watermeter-table {
-  @apply w-full text-left border;
+  @apply w-full text-left border rounded bg-sky-200 mb-4 p-4;
 }
 
 .watermeter-table th, .watermeter-table td {
@@ -77,15 +83,12 @@
 .watermeter-table th {
   @apply bg-sky-500 text-white;
 }
+.watermeter-number{
+  background: #0da6ea;
+  color: rgb(255, 255, 255) !important;
+  @apply w-full text-left border rounded mb-4 p-3;
 
-.watermeter-table tr:nth-child(even) {
-  @apply bg-sky-200;
 }
-
-.watermeter-table tr:nth-child(odd) {
-  @apply bg-sky-200;
-}
-
 .watermeter-table td {
   @apply bg-sky-200;
 }

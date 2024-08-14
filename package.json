@@ -10,8 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emotion/react": "^11.13.0",
+    "@emotion/styled": "^11.13.0",
     "@googlemaps/markerclusterer": "^2.5.3",
     "@headlessui/react": "^2.1.2",
+    "@mui/icons-material": "^5.16.7",
     "@mui/material": "^5.16.6",
     "@react-google-maps/api": "^2.19.3",
     "@reduxjs/toolkit": "^2.2.6",
